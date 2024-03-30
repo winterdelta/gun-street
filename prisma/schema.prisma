@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model User {
+  id                  String        @id @unique @default(uuid())
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  email               String?
+  first_name          String?
+  last_name           String?
+  role                User_role     @default(TEAM_MEMBER)
+  roleConfirmed       Boolean       @default(false)
+  organisationId      String?
+  clerkId             String        @unique
+  onboarding_complete Boolean       @default(false)
+  gender              String?       @default("unset") @db.VarChar(100)
+  departmentId        String?
+  age_range           String?       @default("unset") @db.VarChar(100)
+  work_start_date     DateTime?
+  workstyle           String?       @default("unset") @db.VarChar(100)
+  dev_or_prod         String?       @db.VarChar(100)
+  Organisation        Organisation? @relation(fields: [organisationId], references: [id])
+  Department          Department?   @relation(fields: [departmentId], references: [id])
+  Response            Response[]
+
+  @@index([organisationId])
+  @@index([departmentId])
+}
+
+model Organisation {
+  id                    String       @id @unique @default(uuid())
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  name                  String       @unique @db.VarChar(100)
+  created_by            String?
+  created_by_clerkId    String?
+  clerk_organisation_id String?      @unique
+  dev_or_prod           String?      @db.VarChar(100)
+  department            Department[]
+  User                  User[]
+}
+
+model Department {
+  id             String        @id @unique @default(uuid())
+  name           String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organisationId String?
+  users          User[]
+  Organisation   Organisation? @relation(fields: [organisationId], references: [id])
+
+  @@index([organisationId])
+}
+
+model Question {
+  id           String    @id @unique @default(uuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  text         String?   @db.VarChar(2000)
+  coreTheme    String?   @db.VarChar(100)
+  subTheme     String?   @db.VarChar(100)
+  responseType String?   @db.VarChar(100)
+  date         DateTime?
+}
+
+model Response {
+  id                            String   @id @unique @default(uuid())
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  question                      String?
+  choice                        Int?     @default(0)
+  text                          String?  @db.VarChar(5000)
+  userId                        String?
+  core_question_or_sub_question String?
+  coreTheme                     String?  @db.VarChar(100)
+  subTheme                      String?  @db.VarChar(100)
+  User                          User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model FreeResponse {
+  id        String   @id @unique @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  text      String?  @db.VarChar(5000)
+  clerkId   String
+}
+
+enum User_role {
+  TEAM_LEADER
+  TEAM_MEMBER
+  HR_GENERALIST
+  GLOBAL_ADMIN
+}
