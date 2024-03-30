@@ -1,10 +1,20 @@
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs";
 import { PrismaClient, User_role } from "@prisma/client";
+import { Webhook } from "svix";
+import { headers } from "next/headers";
 
 export async function POST(request: Request) {
   const prisma = new PrismaClient();
   const payload: WebhookEvent = await request.json();
+
+  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
+    throw new Error(
+      "Please add WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local"
+    );
+  }
 
   // is the user on localhost?
   const is_localhost = request.headers.get("origin")?.includes("localhost");
