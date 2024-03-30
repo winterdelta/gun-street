@@ -2,10 +2,12 @@ import { WebhookEvent } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs";
 import { PrismaClient, User_role } from "@prisma/client";
 import { headers } from "next/headers";
+import { Webhook } from "svix";
 
 export async function POST(request: Request) {
   const prisma = new PrismaClient();
   const payload: WebhookEvent = await request.json();
+  const body = JSON.stringify(payload);
 
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
@@ -23,6 +25,25 @@ export async function POST(request: Request) {
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
     return new Response("Error occured -- no svix headers", {
+      status: 400,
+    });
+  }
+
+  // Create a new Svix instance with your secret.
+  const wh = new Webhook(WEBHOOK_SECRET);
+
+  let evt: WebhookEvent;
+
+  // Verify the payload with the headers
+  try {
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    }) as WebhookEvent;
+  } catch (err) {
+    console.error("Error verifying webhook:", err);
+    return new Response("Error occured", {
       status: 400,
     });
   }
